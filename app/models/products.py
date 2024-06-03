@@ -20,3 +20,7 @@ class Product(Base):
     is_active = Column(Boolean, default=True)
 
     category = relationship('Category', back_populates='products')
+
+
+from sqlalchemy.schema import CreateTable
+print(CreateTable(Category.__table__))

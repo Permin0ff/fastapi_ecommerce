@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from typing import Annotated
 from slugify import slugify
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
+
+from app.backend.db import engine
 from app.backend.db_depends import get_db
 from sqlalchemy import select, insert, update
 
 from app.routers.auth import get_current_user
-from app.shemas import CreateProduct
+from app.schemas import CreateProduct
 from app.models import *
 
 router = APIRouter(prefix='/products', tags=['products'])
@@ -58,6 +59,7 @@ async def product_by_category(db: Annotated[AsyncSession, Depends(get_db)], cate
             detail='Category not found'
         )
     subcategories = await db.scalars(select(Category).where(Category.parent_id == category.id))
+
     categories_and_subcategories = [category.id] + [i.id for i in subcategories.all()]
     products_category = await db.scalars(
         select(Product).where(Product.category_id.in_(categories_and_subcategories), Product.is_active == True,
@@ -89,12 +91,14 @@ async def update_product(db: Annotated[AsyncSession, Depends(get_db)], product_s
     if get_user.get('is_supplier') or get_user.get('is_admin'):
         if get_user.get('id') == product_update.supplier_id or get_user.get('is_admin'):
             await db.execute(
-                update(Product).where(Product.slug == product_slug).values(name=update_product_model.name,
-                                                                           description=update_product_model.description,
-                                                                           price=update_product_model.price,
-                                                                           image_url=update_product_model.image_url,
-                                                                           stock=update_product_model.stock,
-                                                                           category_id=update_product_model.category))
+                update(Product).where(Product.slug == product_slug)
+                .values(name=update_product_model.name,
+                        description=update_product_model.description,
+                        price=update_product_model.price,
+                        image_url=update_product_model.image_url,
+                        stock=update_product_model.stock,
+                        category_id=update_product_model.category,
+                        slug=slugify(update_product_model.name)))
             await db.commit()
             return {
                 'status_code': status.HTTP_200_OK,

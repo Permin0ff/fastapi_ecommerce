@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select, insert
 from app.models.user import User
-from app.shemas import CreateUser
+from app.schemas import CreateUser
 from app.backend.db_depends import get_db
 from typing import Annotated
 from sqlalchemy.orm import Session
@@ -64,6 +64,7 @@ async def authanticate_user(db: Annotated[Session, Depends(get_db)], username: s
     return user
 
 
+
 @router.post('/token')
 async def login(db: Annotated[Session, Depends(get_db)], form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     user = await authanticate_user(db, form_data.username, form_data.password)
@@ -99,7 +100,6 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Token expired!"
             )
-
         return {
             'username': username,
             'id': user_id,
@@ -115,5 +115,5 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
 
 @router.get('/read_current_user')
-def read_current_user(user: User = Depends(get_current_user)):
+async def read_current_user(user: User = Depends(get_current_user)):
     return {'User': user}
