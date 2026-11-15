@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import get_current_user
+from app.auth import get_current_user, oauth2_scheme
 from app.db_depends import get_async_db
 from app.models.products import Product
 from app.models.reviews import Review
@@ -11,13 +10,10 @@ from app.models.users import User
 from app.schemas import Review as ReviewSchema, ReviewCreate
 
 router = APIRouter(tags=["reviews"])
-review_oauth2 = OAuth2PasswordBearer(
-    tokenUrl="users/token", auto_error=False, scheme_name="ReviewBearer"
-)
 
 
 async def get_review_user(
-    token: str | None = Depends(review_oauth2),
+    token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_async_db),
 ) -> User:
     if not token:
